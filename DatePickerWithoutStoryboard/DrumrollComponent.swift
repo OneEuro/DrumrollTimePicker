@@ -1,11 +1,13 @@
 import Cocoa
 
 class DrumrollComponent: NSView {
-    private let items: [String]
+    private let originalItems: [String]
+    private let repeatedItems: [String]
     private let itemHeight: CGFloat = 38
     private let baseFontSize: CGFloat = 20
     private let textCenterOffset: CGFloat
     private let cylinderRadius: CGFloat
+    private let cycleHeight: CGFloat
 
     private var scrollOffset: CGFloat = 0 {
         didSet { updatePositions() }
@@ -30,16 +32,18 @@ class DrumrollComponent: NSView {
     var selectedIndex: Int {
         let centerSurface = scrollOffset + bounds.midY
         let idx = Int(round((centerSurface - itemHeight * 0.5) / itemHeight))
-        return max(0, min(items.count - 1, idx))
+        return max(0, min(repeatedItems.count - 1, idx))
     }
 
     func selectedItem() -> String? {
-        guard items.indices.contains(selectedIndex) else { return nil }
-        return items[selectedIndex]
+        let idx = selectedIndex % originalItems.count
+        guard originalItems.indices.contains(idx) else { return nil }
+        return originalItems[idx]
     }
 
     func selectItem(_ value: String, animated: Bool = true) {
-        guard let index = items.firstIndex(of: value) else { return }
+        guard let originalIndex = originalItems.firstIndex(of: value) else { return }
+        let index = originalIndex + originalItems.count
         guard bounds.width > 0, bounds.height > 0 else {
             pendingItemIndex = index
             return
@@ -58,19 +62,23 @@ class DrumrollComponent: NSView {
     }
 
     init(items: [String]) {
-        self.items = items
+        self.originalItems = items
+        self.repeatedItems = items.isEmpty ? [] : Array(repeating: items, count: 3).flatMap { $0 }
         let font = NSFont.systemFont(ofSize: 20)
         textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
         cylinderRadius = (CGFloat(2) * 38) / sin(CGFloat.pi / 5)
+        cycleHeight = CGFloat(items.count) * 38
         super.init(frame: .zero)
         setup()
     }
 
     required init?(coder: NSCoder) {
-        self.items = []
+        self.originalItems = []
+        self.repeatedItems = []
         let font = NSFont.systemFont(ofSize: 20)
         textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
         cylinderRadius = (CGFloat(2) * 38) / sin(CGFloat.pi / 5)
+        cycleHeight = 0
         super.init(coder: coder)
         setup()
     }
@@ -82,7 +90,7 @@ class DrumrollComponent: NSView {
         selectionLayer.cornerRadius = 8
         layer?.addSublayer(selectionLayer)
 
-        for item in items {
+        for item in repeatedItems {
             let textLayer = CATextLayer()
             textLayer.alignmentMode = .center
             textLayer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2.0
@@ -128,7 +136,7 @@ class DrumrollComponent: NSView {
             onSelectedItemChanged?(selectedItem())
         } else if !initialSelectionDone {
             initialSelectionDone = true
-            let idx = items.count / 2
+            let idx = repeatedItems.count / 2
             scrollOffset = clampOffset(CGFloat(idx) * itemHeight + itemHeight * 0.5 - bounds.midY)
         } else {
             updatePositions()
@@ -185,6 +193,18 @@ class DrumrollComponent: NSView {
         CATransaction.commit()
     }
 
+    // MARK: - Infinite Wrap
+
+    private func wrapOffset() {
+        let count = originalItems.count
+        guard count > 0, cycleHeight > 0 else { return }
+        let rawCenter = scrollOffset + bounds.midY
+        var wrapped = rawCenter.truncatingRemainder(dividingBy: cycleHeight)
+        if wrapped < 0 { wrapped += cycleHeight }
+        let middleStart = CGFloat(count) * itemHeight
+        scrollOffset = wrapped + middleStart - bounds.midY
+    }
+
     // MARK: - Mouse Events
 
     override func mouseDown(with event: NSEvent) {
@@ -200,10 +220,11 @@ class DrumrollComponent: NSView {
     override func mouseDragged(with event: NSEvent) {
         guard isDragging else { return }
         let point = convert(event.locationInWindow, from: nil)
-        let delta = dragStartPoint.y - point.y
+        scrollOffset = dragStartOffset + (dragStartPoint.y - point.y)
+        wrapOffset()
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        scrollOffset = clampOffset(dragStartOffset + delta)
+        updatePositions()
         CATransaction.commit()
 
         let now = Date()
@@ -234,9 +255,11 @@ class DrumrollComponent: NSView {
 
     override func scrollWheel(with event: NSEvent) {
         cancelAnimations()
+        scrollOffset -= event.scrollingDeltaY
+        wrapOffset()
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        scrollOffset = clampOffset(scrollOffset - event.scrollingDeltaY)
+        updatePositions()
         CATransaction.commit()
 
         if event.momentumPhase == .ended || event.phase == .ended {
@@ -260,9 +283,11 @@ class DrumrollComponent: NSView {
 
         momentumTimer = Timer.scheduledTimer(withTimeInterval: 1 / 60, repeats: true) { [weak self] timer in
             guard let self = self else { timer.invalidate(); return }
+            self.scrollOffset += self.velocity * (1 / 60)
+            self.wrapOffset()
             CATransaction.begin()
             CATransaction.setDisableActions(true)
-            self.scrollOffset = self.clampOffset(self.scrollOffset + self.velocity * (1 / 60))
+            self.updatePositions()
             CATransaction.commit()
             self.velocity *= decay
 
@@ -298,11 +323,13 @@ class DrumrollComponent: NSView {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             self.scrollOffset = self.clampOffset(startOffset + distance * CGFloat(eased))
+            self.updatePositions()
             CATransaction.commit()
 
             if progress >= 1 {
                 timer.invalidate()
                 self.scrollOffset = self.clampOffset(targetOffset)
+                self.updatePositions()
                 self.onSelectedItemChanged?(self.selectedItem())
             }
         }
@@ -327,11 +354,13 @@ class DrumrollComponent: NSView {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             self.scrollOffset = self.clampOffset(startOffset + distance * CGFloat(eased))
+            self.updatePositions()
             CATransaction.commit()
 
             if progress >= 1 {
                 timer.invalidate()
                 self.scrollOffset = self.clampOffset(targetOffset)
+                self.updatePositions()
                 self.onSelectedItemChanged?(self.selectedItem())
             }
         }
@@ -340,8 +369,9 @@ class DrumrollComponent: NSView {
     // MARK: - Helpers
 
     private func clampOffset(_ offset: CGFloat) -> CGFloat {
+        guard !repeatedItems.isEmpty else { return offset }
         let minOffset = -(bounds.midY - itemHeight * 0.5)
-        let maxOffset = CGFloat(items.count - 1) * itemHeight + itemHeight * 0.5 - bounds.midY
+        let maxOffset = CGFloat(repeatedItems.count - 1) * itemHeight + itemHeight * 0.5 - bounds.midY
         return max(minOffset, min(maxOffset, offset))
     }
 
