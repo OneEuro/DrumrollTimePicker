@@ -27,6 +27,20 @@ class DrumrollComponent: NSView {
     private var momentumTimer: Timer?
     private var snapTimer: Timer?
 
+    var isInfiniteScrollEnabled: Bool = true {
+        didSet {
+            guard bounds.width > 0, bounds.height > 0 else { return }
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            if isInfiniteScrollEnabled {
+                wrapOffset()
+            } else {
+                scrollOffset = clampToMiddle(scrollOffset)
+            }
+            CATransaction.commit()
+        }
+    }
+
     var onSelectedItemChanged: ((String?) -> Void)?
 
     var selectedIndex: Int {
@@ -221,7 +235,11 @@ class DrumrollComponent: NSView {
         guard isDragging else { return }
         let point = convert(event.locationInWindow, from: nil)
         scrollOffset = dragStartOffset + (dragStartPoint.y - point.y)
-        wrapOffset()
+        if isInfiniteScrollEnabled {
+            wrapOffset()
+        } else {
+            scrollOffset = clampToMiddle(scrollOffset)
+        }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         updatePositions()
@@ -256,7 +274,11 @@ class DrumrollComponent: NSView {
     override func scrollWheel(with event: NSEvent) {
         cancelAnimations()
         scrollOffset -= event.scrollingDeltaY
-        wrapOffset()
+        if isInfiniteScrollEnabled {
+            wrapOffset()
+        } else {
+            scrollOffset = clampToMiddle(scrollOffset)
+        }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         updatePositions()
@@ -284,7 +306,11 @@ class DrumrollComponent: NSView {
         momentumTimer = Timer.scheduledTimer(withTimeInterval: 1 / 60, repeats: true) { [weak self] timer in
             guard let self = self else { timer.invalidate(); return }
             self.scrollOffset += self.velocity * (1 / 60)
-            self.wrapOffset()
+            if self.isInfiniteScrollEnabled {
+                self.wrapOffset()
+            } else {
+                self.scrollOffset = self.clampToMiddle(self.scrollOffset)
+            }
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             self.updatePositions()
@@ -372,6 +398,14 @@ class DrumrollComponent: NSView {
         guard !repeatedItems.isEmpty else { return offset }
         let minOffset = -(bounds.midY - itemHeight * 0.5)
         let maxOffset = CGFloat(repeatedItems.count - 1) * itemHeight + itemHeight * 0.5 - bounds.midY
+        return max(minOffset, min(maxOffset, offset))
+    }
+
+    private func clampToMiddle(_ offset: CGFloat) -> CGFloat {
+        let count = originalItems.count
+        guard count > 0 else { return offset }
+        let minOffset = CGFloat(count) * itemHeight + itemHeight * 0.5 - bounds.midY
+        let maxOffset = CGFloat(count * 2 - 1) * itemHeight + itemHeight * 0.5 - bounds.midY
         return max(minOffset, min(maxOffset, offset))
     }
 

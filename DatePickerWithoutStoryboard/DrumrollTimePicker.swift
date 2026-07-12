@@ -16,6 +16,14 @@ class DrumrollTimePicker: NSView {
         }
     }
 
+    var isInfiniteScrollEnabled: Bool = true {
+        didSet {
+            hourPicker.isInfiniteScrollEnabled = isInfiniteScrollEnabled
+            minutePicker.isInfiniteScrollEnabled = isInfiniteScrollEnabled
+            secondPicker.isInfiniteScrollEnabled = isInfiniteScrollEnabled
+        }
+    }
+
     private var secondEqualWidthConstraint: NSLayoutConstraint?
 
     var selectedTime: (hour: Int, minute: Int, second: Int)? {
