@@ -1,14 +1,30 @@
 import Cocoa
 
-class DrumrollComponent: NSView {
+public class DrumrollComponent: NSView {
     private let originalItems: [String]
     private let repeatedItems: [String]
-    private let itemHeight: CGFloat = 38
-    private let baseFontSize: CGFloat = 20
-    private let maxAngle: CGFloat = .pi / 3
-    let textCenterOffset: CGFloat
+    public let itemHeight: CGFloat
+    public let maxAngle: CGFloat
     private let cylinderRadius: CGFloat
     private let cycleHeight: CGFloat
+
+    public var font: NSFont {
+        didSet { rebuildLayers() }
+    }
+
+    public var textColor: NSColor = .white {
+        didSet { updatePositions() }
+    }
+
+    public var componentBackgroundColor: NSColor? {
+        didSet {
+            layer?.backgroundColor = componentBackgroundColor?.cgColor
+        }
+    }
+
+    public var textCenterOffset: CGFloat {
+        itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
+    }
 
     private var scrollOffset: CGFloat = 0 {
         didSet { updatePositions() }
@@ -28,7 +44,7 @@ class DrumrollComponent: NSView {
     private var snapTimer: Timer?
     private var pendingSnapTimer: Timer?
 
-    var isInfiniteScrollEnabled: Bool = true {
+    public var isInfiniteScrollEnabled: Bool = true {
         didSet {
             guard bounds.width > 0, bounds.height > 0 else { return }
             CATransaction.begin()
@@ -42,23 +58,23 @@ class DrumrollComponent: NSView {
         }
     }
 
-    var isScrollDirectionInverted: Bool = false
+    public var isScrollDirectionInverted: Bool = false
 
-    var onSelectedItemChanged: ((String?) -> Void)?
+    public var onSelectedItemChanged: ((String?) -> Void)?
 
-    var selectedIndex: Int {
+    public var selectedIndex: Int {
         let centerSurface = scrollOffset + bounds.midY
         let idx = Int(round((centerSurface - itemHeight * 0.5) / itemHeight))
         return max(0, min(repeatedItems.count - 1, idx))
     }
 
-    func selectedItem() -> String? {
+    public func selectedItem() -> String? {
         let idx = selectedIndex % originalItems.count
         guard originalItems.indices.contains(idx) else { return nil }
         return originalItems[idx]
     }
 
-    func selectItem(_ value: String, animated: Bool = true) {
+    public func selectItem(_ value: String, animated: Bool = true) {
         guard let originalIndex = originalItems.firstIndex(of: value) else { return }
         let index = originalIndex + originalItems.count
         guard bounds.width > 0, bounds.height > 0 else {
@@ -78,21 +94,24 @@ class DrumrollComponent: NSView {
         }
     }
 
-    init(items: [String], unitText: String? = nil) {
+    public init(items: [String], unitText: String? = nil,
+                itemHeight: CGFloat = 38, maxAngle: CGFloat = .pi / 3,
+                font: NSFont = .systemFont(ofSize: 20)) {
         self.originalItems = items
         self.repeatedItems = items.isEmpty ? [] : Array(repeating: items, count: 3).flatMap { $0 }
-        let font = NSFont.systemFont(ofSize: 20)
-        textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
-        cylinderRadius = (CGFloat(2) * 38) / sin(maxAngle)
-        cycleHeight = CGFloat(items.count) * 38
+        self.itemHeight = itemHeight
+        self.maxAngle = maxAngle
+        self.font = font
+        cylinderRadius = (2 * itemHeight) / sin(maxAngle)
+        cycleHeight = CGFloat(items.count) * itemHeight
 
         if let text = unitText {
             let layer = CATextLayer()
             layer.alignmentMode = .left
             layer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2.0
             layer.foregroundColor = NSColor.white.cgColor
-            layer.font = NSFont.systemFont(ofSize: baseFontSize)
-            layer.fontSize = baseFontSize
+            layer.font = font
+            layer.fontSize = font.pointSize
             layer.string = text
             unitLayer = layer
         } else {
@@ -103,12 +122,13 @@ class DrumrollComponent: NSView {
         setup()
     }
 
-    required init?(coder: NSCoder) {
+    public required init?(coder: NSCoder) {
         self.originalItems = []
         self.repeatedItems = []
-        let font = NSFont.systemFont(ofSize: 20)
-        textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
-        cylinderRadius = (CGFloat(2) * 38) / sin(maxAngle)
+        self.itemHeight = 38
+        self.maxAngle = .pi / 3
+        self.font = .systemFont(ofSize: 20)
+        cylinderRadius = (2 * 38) / sin(.pi / 3)
         cycleHeight = 0
         unitLayer = nil
         super.init(coder: coder)
@@ -118,15 +138,14 @@ class DrumrollComponent: NSView {
     private func setup() {
         wantsLayer = true
         layer?.backgroundColor = NSColor.black.cgColor
-        layer?.masksToBounds = false
 
         for item in repeatedItems {
             let textLayer = CATextLayer()
             textLayer.alignmentMode = .center
             textLayer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2.0
-            textLayer.foregroundColor = NSColor.white.cgColor
-            textLayer.font = NSFont.systemFont(ofSize: baseFontSize)
-            textLayer.fontSize = baseFontSize
+            textLayer.foregroundColor = textColor.cgColor
+            textLayer.font = font
+            textLayer.fontSize = font.pointSize
             textLayer.string = item
             layer?.addSublayer(textLayer)
             allLayers.append(textLayer)
@@ -139,7 +158,35 @@ class DrumrollComponent: NSView {
         updatePositions()
     }
 
-    override func layout() {
+    private func rebuildLayers() {
+        for l in allLayers {
+            l.removeFromSuperlayer()
+        }
+        allLayers.removeAll()
+        unitLayer?.removeFromSuperlayer()
+
+        for item in repeatedItems {
+            let textLayer = CATextLayer()
+            textLayer.alignmentMode = .center
+            textLayer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2.0
+            textLayer.foregroundColor = textColor.cgColor
+            textLayer.font = font
+            textLayer.fontSize = font.pointSize
+            textLayer.string = item
+            layer?.addSublayer(textLayer)
+            allLayers.append(textLayer)
+        }
+
+        if let unitLayer {
+            layer?.addSublayer(unitLayer)
+            unitLayer.font = font
+            unitLayer.fontSize = font.pointSize
+        }
+
+        updatePositions()
+    }
+
+    override public func layout() {
         super.layout()
         layer?.frame = bounds
 
@@ -159,7 +206,7 @@ class DrumrollComponent: NSView {
         }
     }
 
-    override var intrinsicContentSize: NSSize {
+    override public var intrinsicContentSize: NSSize {
         NSSize(width: NSView.noIntrinsicMetric, height: itemHeight * 5)
     }
 
@@ -203,13 +250,14 @@ class DrumrollComponent: NSView {
 
             let t = abs(angle) / maxAngle
             layer.opacity = Float(max(0, 1.0 - pow(t, 3)))
-            let brightness = max(0.25, 1.0 - pow(t, 3) * 0.75)
-            layer.foregroundColor = NSColor(white: brightness, alpha: 1.0).cgColor
+            layer.foregroundColor = textColor.withAlphaComponent(CGFloat(layer.opacity)).cgColor
         }
 
         if let unitLayer {
+            unitLayer.font = font
+            unitLayer.fontSize = font.pointSize
             unitLayer.bounds = CGRect(x: 0, y: 0, width: 48, height: itemHeight)
-            unitLayer.position = CGPoint(x: bounds.width * 0.5 + 42, y: viewCenterY + textCenterOffset)
+            unitLayer.position = CGPoint(x: bounds.width * 0.5 + 42, y: bounds.midY + textCenterOffset)
             unitLayer.zPosition = 0
             unitLayer.isHidden = false
         }
@@ -231,7 +279,7 @@ class DrumrollComponent: NSView {
 
     // MARK: - Mouse Events
 
-    override func mouseDown(with event: NSEvent) {
+    override public func mouseDown(with event: NSEvent) {
         isDragging = true
         let point = convert(event.locationInWindow, from: nil)
         dragStartPoint = point
@@ -241,7 +289,7 @@ class DrumrollComponent: NSView {
         cancelAnimations()
     }
 
-    override func mouseDragged(with event: NSEvent) {
+    override public func mouseDragged(with event: NSEvent) {
         guard isDragging else { return }
         let point = convert(event.locationInWindow, from: nil)
         let delta = dragStartPoint.y - point.y
@@ -263,7 +311,7 @@ class DrumrollComponent: NSView {
         }
     }
 
-    override func mouseUp(with event: NSEvent) {
+    override public func mouseUp(with event: NSEvent) {
         isDragging = false
 
         if lastDragPoints.count >= 2 {
@@ -286,7 +334,7 @@ class DrumrollComponent: NSView {
         }
     }
 
-    override func scrollWheel(with event: NSEvent) {
+    override public func scrollWheel(with event: NSEvent) {
         cancelAnimations()
         if isScrollDirectionInverted {
             scrollOffset += event.scrollingDeltaY
