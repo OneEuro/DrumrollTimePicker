@@ -16,7 +16,6 @@ class DrumrollComponent: NSView {
     private var allLayers: [CATextLayer] = []
     private var initialSelectionDone = false
     private let selectionLayer = CAShapeLayer()
-    private let gradientOverlay = CAGradientLayer()
     private var pendingItemIndex: Int?
 
     private var isDragging = false
@@ -99,8 +98,9 @@ class DrumrollComponent: NSView {
 
     private func setup() {
         wantsLayer = true
+        layer?.backgroundColor = NSColor.black.cgColor
 
-        selectionLayer.fillColor = NSColor.systemBlue.withAlphaComponent(0.12).cgColor
+        selectionLayer.fillColor = NSColor.white.withAlphaComponent(0.08).cgColor
         selectionLayer.cornerRadius = 8
         layer?.addSublayer(selectionLayer)
 
@@ -108,24 +108,13 @@ class DrumrollComponent: NSView {
             let textLayer = CATextLayer()
             textLayer.alignmentMode = .center
             textLayer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2.0
-            textLayer.foregroundColor = NSColor.labelColor.cgColor
+            textLayer.foregroundColor = NSColor.white.cgColor
             textLayer.font = NSFont.systemFont(ofSize: baseFontSize)
             textLayer.fontSize = baseFontSize
             textLayer.string = item
             layer?.addSublayer(textLayer)
             allLayers.append(textLayer)
         }
-
-        gradientOverlay.colors = [
-            NSColor.windowBackgroundColor.cgColor,
-            NSColor.clear.cgColor,
-            NSColor.clear.cgColor,
-            NSColor.windowBackgroundColor.cgColor,
-        ]
-        gradientOverlay.locations = [0, 0.25, 0.75, 1]
-        gradientOverlay.startPoint = CGPoint(x: 0.5, y: 0)
-        gradientOverlay.endPoint = CGPoint(x: 0.5, y: 1)
-        layer?.addSublayer(gradientOverlay)
 
         updatePositions()
     }
@@ -139,7 +128,6 @@ class DrumrollComponent: NSView {
             width: max(0, bounds.width - 8),
             height: itemHeight
         )
-        gradientOverlay.frame = bounds
 
         if let pending = pendingItemIndex {
             pendingItemIndex = nil
@@ -200,8 +188,10 @@ class DrumrollComponent: NSView {
             layer.transform = transform
             layer.zPosition = -zDepth
 
-            let opacityProgress = abs(angle) / maxAngle
-            layer.opacity = Float(max(0, min(1, 1 - opacityProgress)))
+            let t = abs(angle) / maxAngle
+            layer.opacity = Float(max(0, 1.0 - pow(t, 3)))
+            let brightness = max(0.25, 1.0 - pow(t, 3) * 0.75)
+            layer.foregroundColor = NSColor(white: brightness, alpha: 1.0).cgColor
         }
 
         CATransaction.commit()

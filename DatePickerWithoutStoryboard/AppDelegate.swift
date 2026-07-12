@@ -32,6 +32,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
            infiniteScrollToggle.translatesAutoresizingMaskIntoConstraints = false
 
            guard let contentView = window.contentView else { return }
+           contentView.wantsLayer = true
+           contentView.layer?.backgroundColor = NSColor.black.cgColor
            contentView.addSubview(picker)
            contentView.addSubview(infiniteScrollToggle)
 
