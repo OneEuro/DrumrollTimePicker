@@ -35,10 +35,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
            infiniteScrollToggle.attributedTitle = NSAttributedString(string: "Infinite Scroll", attributes: infAttrs)
 
            invertScrollToggle = NSButton(checkboxWithTitle: "", target: self, action: #selector(toggleInvertScroll(_:)))
-           invertScrollToggle.state = .off
+           invertScrollToggle.state = .on
            invertScrollToggle.translatesAutoresizingMaskIntoConstraints = false
            let invAttrs: [NSAttributedString.Key: Any] = [.foregroundColor: NSColor.white]
            invertScrollToggle.attributedTitle = NSAttributedString(string: "Invert Scroll Direction", attributes: invAttrs)
+           picker.isScrollDirectionInverted = true
 
            guard let contentView = window.contentView else { return }
            contentView.wantsLayer = true
@@ -66,9 +67,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func toggleInvertScroll(_ sender: NSButton) {
-        let inverted = sender.state == .on
-        picker.isScrollDirectionInverted = inverted
-        window.title = inverted ? "Drumroll Time Picker [INVERTED]" : "Drumroll Time Picker"
+        picker.isScrollDirectionInverted = sender.state == .on
     }
 
         func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

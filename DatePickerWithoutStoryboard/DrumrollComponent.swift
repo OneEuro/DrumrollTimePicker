@@ -6,7 +6,7 @@ class DrumrollComponent: NSView {
     private let itemHeight: CGFloat = 38
     private let baseFontSize: CGFloat = 20
     private let maxAngle: CGFloat = .pi / 3
-    private let textCenterOffset: CGFloat
+    let textCenterOffset: CGFloat
     private let cylinderRadius: CGFloat
     private let cycleHeight: CGFloat
 
@@ -17,7 +17,6 @@ class DrumrollComponent: NSView {
     private var allLayers: [CATextLayer] = []
     private let unitLayer: CATextLayer?
     private var initialSelectionDone = false
-    private let selectionLayer = CAShapeLayer()
     private var pendingItemIndex: Int?
 
     private var isDragging = false
@@ -44,10 +43,6 @@ class DrumrollComponent: NSView {
     }
 
     var isScrollDirectionInverted: Bool = false
-
-    private func updateSelectionColor() {
-        selectionLayer.fillColor = NSColor.white.withAlphaComponent(0.08).cgColor
-    }
 
     var onSelectedItemChanged: ((String?) -> Void)?
 
@@ -125,10 +120,6 @@ class DrumrollComponent: NSView {
         layer?.backgroundColor = NSColor.black.cgColor
         layer?.masksToBounds = false
 
-        selectionLayer.fillColor = NSColor.white.withAlphaComponent(0.08).cgColor
-        selectionLayer.cornerRadius = 8
-        layer?.addSublayer(selectionLayer)
-
         for item in repeatedItems {
             let textLayer = CATextLayer()
             textLayer.alignmentMode = .center
@@ -151,12 +142,6 @@ class DrumrollComponent: NSView {
     override func layout() {
         super.layout()
         layer?.frame = bounds
-        selectionLayer.frame = CGRect(
-            x: 4,
-            y: bounds.midY - itemHeight * 0.5,
-            width: max(0, bounds.width - 8),
-            height: itemHeight
-        )
 
         if let pending = pendingItemIndex {
             pendingItemIndex = nil
@@ -282,7 +267,8 @@ class DrumrollComponent: NSView {
         isDragging = false
 
         if lastDragPoints.count >= 2 {
-            let first = lastDragPoints.first!
+            let count = min(lastDragPoints.count, 4)
+            let first = lastDragPoints[lastDragPoints.count - count]
             let last = lastDragPoints.last!
             let dt = last.0.timeIntervalSince(first.0)
             if dt > 0 {
@@ -293,7 +279,7 @@ class DrumrollComponent: NSView {
             }
         }
 
-        if abs(velocity) > 50 {
+        if abs(velocity) > 30 {
             startMomentum()
         } else {
             snapToNearest()

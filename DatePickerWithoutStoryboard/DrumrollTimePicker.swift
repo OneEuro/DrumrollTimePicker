@@ -1,9 +1,17 @@
 import Cocoa
 
+class PassthroughView: NSView {
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let hit = super.hitTest(point)
+        return hit === self ? nil : hit
+    }
+}
+
 class DrumrollTimePicker: NSView {
     private let hourPicker = DrumrollComponent(items: Array(0...23).map { String(format: "%02d", $0) }, unitText: "ч")
     private let minutePicker = DrumrollComponent(items: Array(0...59).map { String(format: "%02d", $0) }, unitText: "мин")
     private let secondPicker = DrumrollComponent(items: Array(0...59).map { String(format: "%02d", $0) }, unitText: "с")
+    private let selectionOverlay = PassthroughView()
 
     var showsSeconds: Bool = false {
         didSet {
@@ -70,6 +78,10 @@ class DrumrollTimePicker: NSView {
             addSubview(v)
         }
 
+        selectionOverlay.wantsLayer = true
+        selectionOverlay.layer?.backgroundColor = .clear
+        addSubview(selectionOverlay, positioned: .above, relativeTo: nil)
+
         NSLayoutConstraint.activate([
             hourPicker.leadingAnchor.constraint(equalTo: leadingAnchor),
             hourPicker.topAnchor.constraint(equalTo: topAnchor),
@@ -95,4 +107,22 @@ class DrumrollTimePicker: NSView {
 
         secondPicker.isHidden = !showsSeconds
     }
+
+    override func layout() {
+        super.layout()
+        selectionOverlay.frame = bounds
+        let centerY = bounds.midY + hourPicker.textCenterOffset
+        let bar = CALayer()
+        bar.backgroundColor = NSColor.systemIndigo.withAlphaComponent(0.2).cgColor
+        bar.cornerRadius = 16
+        bar.frame = CGRect(
+            x: 4,
+            y: centerY - 13,
+            width: max(0, bounds.width - 8),
+            height: 34
+        )
+        selectionOverlay.layer?.sublayers = nil
+        selectionOverlay.layer?.addSublayer(bar)
+    }
+
 }
