@@ -8,7 +8,6 @@ class DrumrollTimePicker: NSView {
     var showsSeconds: Bool = false {
         didSet {
             secondPicker.isHidden = !showsSeconds
-            secondEqualWidthConstraint?.isActive = showsSeconds
         }
     }
 
@@ -20,7 +19,16 @@ class DrumrollTimePicker: NSView {
         }
     }
 
-    private var secondEqualWidthConstraint: NSLayoutConstraint?
+    private var _isScrollDirectionInverted: Bool = false
+    var isScrollDirectionInverted: Bool {
+        get { _isScrollDirectionInverted }
+        set {
+            _isScrollDirectionInverted = newValue
+            hourPicker.isScrollDirectionInverted = newValue
+            minutePicker.isScrollDirectionInverted = newValue
+            secondPicker.isScrollDirectionInverted = newValue
+        }
+    }
 
     var selectedTime: (hour: Int, minute: Int, second: Int)? {
         guard
@@ -66,7 +74,6 @@ class DrumrollTimePicker: NSView {
             hourPicker.leadingAnchor.constraint(equalTo: leadingAnchor),
             hourPicker.topAnchor.constraint(equalTo: topAnchor),
             hourPicker.bottomAnchor.constraint(equalTo: bottomAnchor),
-            hourPicker.widthAnchor.constraint(equalToConstant: 115),
 
             minutePicker.leadingAnchor.constraint(equalTo: hourPicker.trailingAnchor, constant: 8),
             minutePicker.topAnchor.constraint(equalTo: topAnchor),
@@ -79,9 +86,6 @@ class DrumrollTimePicker: NSView {
             secondPicker.widthAnchor.constraint(equalTo: hourPicker.widthAnchor),
             secondPicker.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
-
-        let equalWidth = minutePicker.widthAnchor.constraint(equalTo: secondPicker.widthAnchor)
-        secondEqualWidthConstraint = equalWidth
 
         let now = Date()
         let calendar = Calendar.current

@@ -43,6 +43,12 @@ class DrumrollComponent: NSView {
         }
     }
 
+    var isScrollDirectionInverted: Bool = false
+
+    private func updateSelectionColor() {
+        selectionLayer.fillColor = NSColor.white.withAlphaComponent(0.08).cgColor
+    }
+
     var onSelectedItemChanged: ((String?) -> Void)?
 
     var selectedIndex: Int {
@@ -253,7 +259,8 @@ class DrumrollComponent: NSView {
     override func mouseDragged(with event: NSEvent) {
         guard isDragging else { return }
         let point = convert(event.locationInWindow, from: nil)
-        scrollOffset = dragStartOffset + (dragStartPoint.y - point.y)
+        let delta = dragStartPoint.y - point.y
+        scrollOffset = dragStartOffset + (isScrollDirectionInverted ? -delta : delta)
         if isInfiniteScrollEnabled {
             wrapOffset()
         } else {
@@ -280,6 +287,9 @@ class DrumrollComponent: NSView {
             let dt = last.0.timeIntervalSince(first.0)
             if dt > 0 {
                 velocity = (last.1 - first.1) / CGFloat(dt)
+                if isScrollDirectionInverted {
+                    velocity = -velocity
+                }
             }
         }
 
@@ -292,7 +302,11 @@ class DrumrollComponent: NSView {
 
     override func scrollWheel(with event: NSEvent) {
         cancelAnimations()
-        scrollOffset -= event.scrollingDeltaY
+        if isScrollDirectionInverted {
+            scrollOffset += event.scrollingDeltaY
+        } else {
+            scrollOffset -= event.scrollingDeltaY
+        }
         if isInfiniteScrollEnabled {
             wrapOffset()
         } else {
