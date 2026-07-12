@@ -27,6 +27,7 @@ class DrumrollComponent: NSView {
     private var lastDragPoints: [(Date, CGFloat)] = []
     private var momentumTimer: Timer?
     private var snapTimer: Timer?
+    private var pendingSnapTimer: Timer?
 
     var isInfiniteScrollEnabled: Bool = true {
         didSet {
@@ -302,8 +303,13 @@ class DrumrollComponent: NSView {
         updatePositions()
         CATransaction.commit()
 
+        pendingSnapTimer?.invalidate()
         if event.momentumPhase == .ended || event.phase == .ended {
             snapToNearest()
+        } else {
+            pendingSnapTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [weak self] _ in
+                self?.snapToNearest()
+            }
         }
     }
 
@@ -314,6 +320,8 @@ class DrumrollComponent: NSView {
         momentumTimer = nil
         snapTimer?.invalidate()
         snapTimer = nil
+        pendingSnapTimer?.invalidate()
+        pendingSnapTimer = nil
     }
 
     private func startMomentum() {
