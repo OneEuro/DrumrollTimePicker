@@ -5,6 +5,7 @@ class DrumrollComponent: NSView {
     private let repeatedItems: [String]
     private let itemHeight: CGFloat = 38
     private let baseFontSize: CGFloat = 20
+    private let maxAngle: CGFloat = .pi / 4
     private let textCenterOffset: CGFloat
     private let cylinderRadius: CGFloat
     private let cycleHeight: CGFloat
@@ -79,7 +80,7 @@ class DrumrollComponent: NSView {
         self.repeatedItems = items.isEmpty ? [] : Array(repeating: items, count: 3).flatMap { $0 }
         let font = NSFont.systemFont(ofSize: 20)
         textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
-        cylinderRadius = (CGFloat(2) * 38) / sin(CGFloat.pi / 5)
+        cylinderRadius = (CGFloat(2) * 38) / sin(maxAngle)
         cycleHeight = CGFloat(items.count) * 38
         super.init(frame: .zero)
         setup()
@@ -90,7 +91,7 @@ class DrumrollComponent: NSView {
         self.repeatedItems = []
         let font = NSFont.systemFont(ofSize: 20)
         textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
-        cylinderRadius = (CGFloat(2) * 38) / sin(CGFloat.pi / 5)
+        cylinderRadius = (CGFloat(2) * 38) / sin(maxAngle)
         cycleHeight = 0
         super.init(coder: coder)
         setup()
@@ -157,7 +158,6 @@ class DrumrollComponent: NSView {
 
         let viewCenterY = bounds.midY
         let centerSurface = scrollOffset + viewCenterY
-        let maxAngle = CGFloat.pi / 5
 
         for (i, layer) in allLayers.enumerated() {
             let itemCenter = CGFloat(i) * itemHeight + itemHeight * 0.5

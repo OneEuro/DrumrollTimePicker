@@ -27,9 +27,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
            picker.showsSeconds = true
            picker.translatesAutoresizingMaskIntoConstraints = false
 
-           infiniteScrollToggle = NSButton(checkboxWithTitle: "Infinite Scroll", target: self, action: #selector(toggleInfiniteScroll(_:)))
+           infiniteScrollToggle = NSButton(checkboxWithTitle: "", target: self, action: #selector(toggleInfiniteScroll(_:)))
            infiniteScrollToggle.state = .on
            infiniteScrollToggle.translatesAutoresizingMaskIntoConstraints = false
+           let attrs: [NSAttributedString.Key: Any] = [.foregroundColor: NSColor.white]
+           infiniteScrollToggle.attributedTitle = NSAttributedString(string: "Infinite Scroll", attributes: attrs)
 
            guard let contentView = window.contentView else { return }
            contentView.wantsLayer = true
