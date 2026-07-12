@@ -3,13 +3,16 @@ import Cocoa
 class DrumrollComponent: NSView {
     private let items: [String]
     private let itemHeight: CGFloat = 38
-    private let visibleRowCount = 5
+    private let baseFontSize: CGFloat = 20
+    private let textCenterOffset: CGFloat
+    private let cylinderRadius: CGFloat
 
     private var scrollOffset: CGFloat = 0 {
-        didSet { updateRows() }
+        didSet { updatePositions() }
     }
 
-    private var rowLayers: [CATextLayer] = []
+    private var allLayers: [CATextLayer] = []
+    private var initialSelectionDone = false
     private let selectionLayer = CAShapeLayer()
     private let gradientOverlay = CAGradientLayer()
     private var pendingItemIndex: Int?
@@ -25,8 +28,8 @@ class DrumrollComponent: NSView {
     var onSelectedItemChanged: ((String?) -> Void)?
 
     var selectedIndex: Int {
-        let centerContentY = scrollOffset + bounds.midY
-        let idx = Int(round((centerContentY - itemHeight * 0.5) / itemHeight))
+        let centerSurface = scrollOffset + bounds.midY
+        let idx = Int(round((centerSurface - itemHeight * 0.5) / itemHeight))
         return max(0, min(items.count - 1, idx))
     }
 
@@ -56,12 +59,18 @@ class DrumrollComponent: NSView {
 
     init(items: [String]) {
         self.items = items
+        let font = NSFont.systemFont(ofSize: 20)
+        textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
+        cylinderRadius = (CGFloat(2) * 38) / sin(CGFloat.pi / 5)
         super.init(frame: .zero)
         setup()
     }
 
     required init?(coder: NSCoder) {
         self.items = []
+        let font = NSFont.systemFont(ofSize: 20)
+        textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
+        cylinderRadius = (CGFloat(2) * 38) / sin(CGFloat.pi / 5)
         super.init(coder: coder)
         setup()
     }
@@ -73,15 +82,16 @@ class DrumrollComponent: NSView {
         selectionLayer.cornerRadius = 8
         layer?.addSublayer(selectionLayer)
 
-        for _ in 0..<visibleRowCount {
+        for item in items {
             let textLayer = CATextLayer()
             textLayer.alignmentMode = .center
             textLayer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2.0
             textLayer.foregroundColor = NSColor.labelColor.cgColor
-            textLayer.font = NSFont.systemFont(ofSize: 18)
-            textLayer.fontSize = 18
+            textLayer.font = NSFont.systemFont(ofSize: baseFontSize)
+            textLayer.fontSize = baseFontSize
+            textLayer.string = item
             layer?.addSublayer(textLayer)
-            rowLayers.append(textLayer)
+            allLayers.append(textLayer)
         }
 
         gradientOverlay.colors = [
@@ -95,7 +105,7 @@ class DrumrollComponent: NSView {
         gradientOverlay.endPoint = CGPoint(x: 0.5, y: 1)
         layer?.addSublayer(gradientOverlay)
 
-        updateRows()
+        updatePositions()
     }
 
     override func layout() {
@@ -115,63 +125,61 @@ class DrumrollComponent: NSView {
             CATransaction.setDisableActions(true)
             scrollOffset = clampOffset(CGFloat(pending) * itemHeight + itemHeight * 0.5 - bounds.midY)
             CATransaction.commit()
+            onSelectedItemChanged?(selectedItem())
+        } else if !initialSelectionDone {
+            initialSelectionDone = true
+            let idx = items.count / 2
+            scrollOffset = clampOffset(CGFloat(idx) * itemHeight + itemHeight * 0.5 - bounds.midY)
         } else {
-            updateRows()
+            updatePositions()
         }
     }
 
     override var intrinsicContentSize: NSSize {
-        NSSize(width: NSView.noIntrinsicMetric, height: itemHeight * CGFloat(visibleRowCount))
+        NSSize(width: NSView.noIntrinsicMetric, height: itemHeight * 5)
     }
 
-    private func updateRows() {
+    private func updatePositions() {
         guard bounds.width > 0, bounds.height > 0 else { return }
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)
 
-        let centerContentY = scrollOffset + bounds.midY
-        let halfVisible = visibleRowCount / 2
-        let centerIdx = Int(round(centerContentY / itemHeight))
+        let viewCenterY = bounds.midY
+        let centerSurface = scrollOffset + viewCenterY
+        let maxAngle = CGFloat.pi / 5
 
-        let startIdx = centerIdx - halfVisible
-        let endIdx = centerIdx + halfVisible
+        for (i, layer) in allLayers.enumerated() {
+            let itemCenter = CGFloat(i) * itemHeight + itemHeight * 0.5
+            let surfaceDist = itemCenter - centerSurface
+            let angle = surfaceDist / cylinderRadius
 
-        for i in 0..<visibleRowCount {
-            let itemIdx = startIdx + i
-            let layer = rowLayers[i]
-
-            if itemIdx >= 0, itemIdx < items.count {
-                layer.isHidden = false
-                layer.string = items[itemIdx]
-
-                let viewY = CGFloat(itemIdx) * itemHeight - scrollOffset
-                layer.frame = CGRect(
-                    x: 0,
-                    y: viewY,
-                    width: bounds.width,
-                    height: itemHeight
-                )
-
-                let distance = abs(viewY + itemHeight * 0.5 - bounds.midY) / (bounds.height * 0.5)
-                let clampedDistance = min(distance, 1.0)
-
-                var transform = CATransform3DIdentity
-                transform.m34 = -1.0 / 500.0
-                let angle = clampedDistance * CGFloat.pi / 7
-                let sign: CGFloat = (viewY + itemHeight * 0.5 < bounds.midY) ? 1.0 : -1.0
-                transform = CATransform3DRotate(transform, angle * sign, 1, 0, 0)
-
-                let scale = max(0.65, 1.0 - clampedDistance * 0.4)
-                transform = CATransform3DScale(transform, scale, scale, 1)
-
-                layer.transform = transform
-                layer.opacity = Float(max(0.2, 1.0 - clampedDistance * 0.85))
-                layer.fontSize = max(12, 18 - clampedDistance * 8)
-                layer.zPosition = (itemIdx == selectedIndex) ? 1 : 0
-            } else {
+            guard abs(angle) <= maxAngle else {
                 layer.isHidden = true
+                continue
             }
+
+            layer.isHidden = false
+
+            let projectedY = cylinderRadius * sin(angle)
+            let screenCenterY = viewCenterY - projectedY
+            let zDepth = cylinderRadius * (1 - cos(angle))
+
+            layer.bounds = CGRect(x: 0, y: 0, width: bounds.width, height: itemHeight)
+            layer.position = CGPoint(x: bounds.width * 0.5, y: screenCenterY + textCenterOffset)
+
+            var transform = CATransform3DIdentity
+            transform.m34 = -1.0 / 500.0
+            transform = CATransform3DRotate(transform, angle, 1, 0, 0)
+
+            let combinedScale = min(1.0, 500.0 / (500.0 + zDepth))
+            transform = CATransform3DScale(transform, combinedScale, combinedScale, 1)
+
+            layer.transform = transform
+            layer.zPosition = -zDepth
+
+            let opacityProgress = abs(angle) / maxAngle
+            layer.opacity = Float(max(0, min(1, 1 - opacityProgress)))
         }
 
         CATransaction.commit()
