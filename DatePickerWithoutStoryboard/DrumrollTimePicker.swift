@@ -1,20 +1,13 @@
 import Cocoa
 
 class DrumrollTimePicker: NSView {
-    private let hourPicker = DrumrollComponent(items: Array(0...23).map { String(format: "%02d", $0) })
-    private let minutePicker = DrumrollComponent(items: Array(0...59).map { String(format: "%02d", $0) })
-    private let secondPicker = DrumrollComponent(items: Array(0...59).map { String(format: "%02d", $0) })
-
-    private var hourMinuteSeparator: NSTextField!
-    private var minuteSecondSeparator: NSTextField!
-    private let hourLabel = NSTextField(labelWithString: "ч")
-    private let minuteLabel = NSTextField(labelWithString: "мин")
-    private let secondLabel = NSTextField(labelWithString: "с")
+    private let hourPicker = DrumrollComponent(items: Array(0...23).map { String(format: "%02d", $0) }, unitText: "ч")
+    private let minutePicker = DrumrollComponent(items: Array(0...59).map { String(format: "%02d", $0) }, unitText: "мин")
+    private let secondPicker = DrumrollComponent(items: Array(0...59).map { String(format: "%02d", $0) }, unitText: "с")
 
     var showsSeconds: Bool = false {
         didSet {
             secondPicker.isHidden = !showsSeconds
-            minuteSecondSeparator.isHidden = !showsSeconds
             secondEqualWidthConstraint?.isActive = showsSeconds
         }
     }
@@ -57,58 +50,28 @@ class DrumrollTimePicker: NSView {
     }
 
     private func setupUI() {
-        hourMinuteSeparator = makeSeparator()
-        minuteSecondSeparator = makeSeparator()
-
         hourPicker.translatesAutoresizingMaskIntoConstraints = false
         minutePicker.translatesAutoresizingMaskIntoConstraints = false
         secondPicker.translatesAutoresizingMaskIntoConstraints = false
-        hourMinuteSeparator.translatesAutoresizingMaskIntoConstraints = false
-        minuteSecondSeparator.translatesAutoresizingMaskIntoConstraints = false
-        hourLabel.translatesAutoresizingMaskIntoConstraints = false
-        minuteLabel.translatesAutoresizingMaskIntoConstraints = false
-        secondLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        for v in [hourPicker, hourMinuteSeparator!, minutePicker, minuteSecondSeparator!, secondPicker,
-                  hourLabel, minuteLabel, secondLabel] as [NSView] {
+        for v in [hourPicker, minutePicker, secondPicker] as [NSView] {
             addSubview(v)
         }
-
-        configureUnitLabel(hourLabel)
-        configureUnitLabel(minuteLabel)
-        configureUnitLabel(secondLabel)
 
         NSLayoutConstraint.activate([
             hourPicker.leadingAnchor.constraint(equalTo: leadingAnchor),
             hourPicker.topAnchor.constraint(equalTo: topAnchor),
             hourPicker.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            hourLabel.leadingAnchor.constraint(equalTo: hourPicker.trailingAnchor, constant: 4),
-            hourLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-
-            hourMinuteSeparator.leadingAnchor.constraint(equalTo: hourLabel.trailingAnchor, constant: 4),
-            hourMinuteSeparator.centerYAnchor.constraint(equalTo: centerYAnchor),
-            hourMinuteSeparator.widthAnchor.constraint(equalToConstant: 20),
-
-            minutePicker.leadingAnchor.constraint(equalTo: hourMinuteSeparator.trailingAnchor, constant: 2),
+            minutePicker.leadingAnchor.constraint(equalTo: hourPicker.trailingAnchor, constant: 8),
             minutePicker.topAnchor.constraint(equalTo: topAnchor),
             minutePicker.bottomAnchor.constraint(equalTo: bottomAnchor),
             minutePicker.widthAnchor.constraint(equalTo: hourPicker.widthAnchor),
 
-            minuteLabel.leadingAnchor.constraint(equalTo: minutePicker.trailingAnchor, constant: 4),
-            minuteLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-
-            minuteSecondSeparator.leadingAnchor.constraint(equalTo: minuteLabel.trailingAnchor, constant: 4),
-            minuteSecondSeparator.centerYAnchor.constraint(equalTo: centerYAnchor),
-            minuteSecondSeparator.widthAnchor.constraint(equalToConstant: 20),
-
-            secondPicker.leadingAnchor.constraint(equalTo: minuteSecondSeparator.trailingAnchor, constant: 2),
+            secondPicker.leadingAnchor.constraint(equalTo: minutePicker.trailingAnchor, constant: 8),
             secondPicker.topAnchor.constraint(equalTo: topAnchor),
             secondPicker.bottomAnchor.constraint(equalTo: bottomAnchor),
-
-            secondLabel.leadingAnchor.constraint(equalTo: secondPicker.trailingAnchor, constant: 4),
-            secondLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            secondLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
+            secondPicker.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
         ])
 
         let equalWidth = minutePicker.widthAnchor.constraint(equalTo: secondPicker.widthAnchor)
@@ -121,20 +84,5 @@ class DrumrollTimePicker: NSView {
         secondPicker.selectItem(String(format: "%02d", calendar.component(.second, from: now)), animated: false)
 
         secondPicker.isHidden = !showsSeconds
-        minuteSecondSeparator.isHidden = !showsSeconds
-    }
-
-    private func configureUnitLabel(_ label: NSTextField) {
-        label.font = NSFont.systemFont(ofSize: 16)
-        label.textColor = .white
-        label.alignment = .left
-    }
-
-    private func makeSeparator() -> NSTextField {
-        let label = NSTextField(labelWithString: ":")
-        label.alignment = .center
-        label.font = NSFont.systemFont(ofSize: 20, weight: .bold)
-        label.textColor = .white
-        return label
     }
 }

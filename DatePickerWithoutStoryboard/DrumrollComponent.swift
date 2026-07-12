@@ -7,6 +7,7 @@ class DrumrollComponent: NSView {
     private let baseFontSize: CGFloat = 20
     private let maxAngle: CGFloat = .pi / 3
     private let textCenterOffset: CGFloat
+    private let unitOffset: CGFloat
     private let cylinderRadius: CGFloat
     private let cycleHeight: CGFloat
 
@@ -15,6 +16,7 @@ class DrumrollComponent: NSView {
     }
 
     private var allLayers: [CATextLayer] = []
+    private let unitLayer: CATextLayer?
     private var initialSelectionDone = false
     private let selectionLayer = CAShapeLayer()
     private var pendingItemIndex: Int?
@@ -75,13 +77,28 @@ class DrumrollComponent: NSView {
         }
     }
 
-    init(items: [String]) {
+    init(items: [String], unitText: String? = nil) {
         self.originalItems = items
         self.repeatedItems = items.isEmpty ? [] : Array(repeating: items, count: 3).flatMap { $0 }
         let font = NSFont.systemFont(ofSize: 20)
         textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
         cylinderRadius = (CGFloat(2) * 38) / sin(maxAngle)
         cycleHeight = CGFloat(items.count) * 38
+        unitOffset = textCenterOffset + (font.ascender - NSFont.systemFont(ofSize: 16).ascender)
+
+        if let text = unitText {
+            let layer = CATextLayer()
+            layer.alignmentMode = .left
+            layer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2.0
+            layer.foregroundColor = NSColor.white.cgColor
+            layer.font = NSFont.systemFont(ofSize: 16)
+            layer.fontSize = 16
+            layer.string = text
+            unitLayer = layer
+        } else {
+            unitLayer = nil
+        }
+
         super.init(frame: .zero)
         setup()
     }
@@ -93,6 +110,8 @@ class DrumrollComponent: NSView {
         textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
         cylinderRadius = (CGFloat(2) * 38) / sin(maxAngle)
         cycleHeight = 0
+        unitOffset = 0
+        unitLayer = nil
         super.init(coder: coder)
         setup()
     }
@@ -115,6 +134,10 @@ class DrumrollComponent: NSView {
             textLayer.string = item
             layer?.addSublayer(textLayer)
             allLayers.append(textLayer)
+        }
+
+        if let unitLayer {
+            layer?.addSublayer(unitLayer)
         }
 
         updatePositions()
@@ -192,6 +215,13 @@ class DrumrollComponent: NSView {
             layer.opacity = Float(max(0, 1.0 - pow(t, 3)))
             let brightness = max(0.25, 1.0 - pow(t, 3) * 0.75)
             layer.foregroundColor = NSColor(white: brightness, alpha: 1.0).cgColor
+        }
+
+        if let unitLayer {
+            unitLayer.bounds = CGRect(x: 0, y: 0, width: 40, height: itemHeight)
+            unitLayer.position = CGPoint(x: bounds.width * 0.5 + 50, y: viewCenterY + unitOffset)
+            unitLayer.zPosition = 0
+            unitLayer.isHidden = false
         }
 
         CATransaction.commit()
