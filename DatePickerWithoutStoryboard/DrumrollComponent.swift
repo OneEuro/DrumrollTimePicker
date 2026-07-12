@@ -5,7 +5,7 @@ class DrumrollComponent: NSView {
     private let repeatedItems: [String]
     private let itemHeight: CGFloat = 38
     private let baseFontSize: CGFloat = 20
-    private let maxAngle: CGFloat = .pi / 4
+    private let maxAngle: CGFloat = .pi / 3
     private let textCenterOffset: CGFloat
     private let cylinderRadius: CGFloat
     private let cycleHeight: CGFloat
