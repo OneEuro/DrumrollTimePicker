@@ -41,11 +41,15 @@ class DrumrollTimePicker: NSView {
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.masksToBounds = false
         setupUI()
     }
 
     required init?(coder decoder: NSCoder) {
         super.init(coder: decoder)
+        wantsLayer = true
+        layer?.masksToBounds = false
         setupUI()
     }
 
@@ -62,6 +66,7 @@ class DrumrollTimePicker: NSView {
             hourPicker.leadingAnchor.constraint(equalTo: leadingAnchor),
             hourPicker.topAnchor.constraint(equalTo: topAnchor),
             hourPicker.bottomAnchor.constraint(equalTo: bottomAnchor),
+            hourPicker.widthAnchor.constraint(equalToConstant: 115),
 
             minutePicker.leadingAnchor.constraint(equalTo: hourPicker.trailingAnchor, constant: 8),
             minutePicker.topAnchor.constraint(equalTo: topAnchor),
@@ -71,7 +76,8 @@ class DrumrollTimePicker: NSView {
             secondPicker.leadingAnchor.constraint(equalTo: minutePicker.trailingAnchor, constant: 8),
             secondPicker.topAnchor.constraint(equalTo: topAnchor),
             secondPicker.bottomAnchor.constraint(equalTo: bottomAnchor),
-            secondPicker.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
+            secondPicker.widthAnchor.constraint(equalTo: hourPicker.widthAnchor),
+            secondPicker.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
 
         let equalWidth = minutePicker.widthAnchor.constraint(equalTo: secondPicker.widthAnchor)

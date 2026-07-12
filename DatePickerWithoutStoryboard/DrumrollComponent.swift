@@ -7,7 +7,6 @@ class DrumrollComponent: NSView {
     private let baseFontSize: CGFloat = 20
     private let maxAngle: CGFloat = .pi / 3
     private let textCenterOffset: CGFloat
-    private let unitOffset: CGFloat
     private let cylinderRadius: CGFloat
     private let cycleHeight: CGFloat
 
@@ -84,15 +83,14 @@ class DrumrollComponent: NSView {
         textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
         cylinderRadius = (CGFloat(2) * 38) / sin(maxAngle)
         cycleHeight = CGFloat(items.count) * 38
-        unitOffset = textCenterOffset + (font.ascender - NSFont.systemFont(ofSize: 16).ascender)
 
         if let text = unitText {
             let layer = CATextLayer()
             layer.alignmentMode = .left
             layer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2.0
             layer.foregroundColor = NSColor.white.cgColor
-            layer.font = NSFont.systemFont(ofSize: 16)
-            layer.fontSize = 16
+            layer.font = NSFont.systemFont(ofSize: baseFontSize)
+            layer.fontSize = baseFontSize
             layer.string = text
             unitLayer = layer
         } else {
@@ -110,7 +108,6 @@ class DrumrollComponent: NSView {
         textCenterOffset = itemHeight * 0.5 - (font.ascender + font.descender) * 0.5
         cylinderRadius = (CGFloat(2) * 38) / sin(maxAngle)
         cycleHeight = 0
-        unitOffset = 0
         unitLayer = nil
         super.init(coder: coder)
         setup()
@@ -119,6 +116,7 @@ class DrumrollComponent: NSView {
     private func setup() {
         wantsLayer = true
         layer?.backgroundColor = NSColor.black.cgColor
+        layer?.masksToBounds = false
 
         selectionLayer.fillColor = NSColor.white.withAlphaComponent(0.08).cgColor
         selectionLayer.cornerRadius = 8
@@ -218,8 +216,8 @@ class DrumrollComponent: NSView {
         }
 
         if let unitLayer {
-            unitLayer.bounds = CGRect(x: 0, y: 0, width: 40, height: itemHeight)
-            unitLayer.position = CGPoint(x: bounds.width * 0.5 + 50, y: viewCenterY + unitOffset)
+            unitLayer.bounds = CGRect(x: 0, y: 0, width: 48, height: itemHeight)
+            unitLayer.position = CGPoint(x: bounds.width * 0.5 + 42, y: viewCenterY + textCenterOffset)
             unitLayer.zPosition = 0
             unitLayer.isHidden = false
         }

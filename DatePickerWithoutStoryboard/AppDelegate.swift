@@ -42,7 +42,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
            NSLayoutConstraint.activate([
                picker.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
                picker.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
-               picker.widthAnchor.constraint(equalToConstant: 300),
+                picker.widthAnchor.constraint(equalToConstant: 370),
                picker.heightAnchor.constraint(equalToConstant: 190),
 
                infiniteScrollToggle.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
