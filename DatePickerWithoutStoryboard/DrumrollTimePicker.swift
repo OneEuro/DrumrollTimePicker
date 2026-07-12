@@ -7,6 +7,9 @@ class DrumrollTimePicker: NSView {
 
     private var hourMinuteSeparator: NSTextField!
     private var minuteSecondSeparator: NSTextField!
+    private let hourLabel = NSTextField(labelWithString: "ч")
+    private let minuteLabel = NSTextField(labelWithString: "мин")
+    private let secondLabel = NSTextField(labelWithString: "с")
 
     var showsSeconds: Bool = false {
         didSet {
@@ -62,19 +65,28 @@ class DrumrollTimePicker: NSView {
         secondPicker.translatesAutoresizingMaskIntoConstraints = false
         hourMinuteSeparator.translatesAutoresizingMaskIntoConstraints = false
         minuteSecondSeparator.translatesAutoresizingMaskIntoConstraints = false
+        hourLabel.translatesAutoresizingMaskIntoConstraints = false
+        minuteLabel.translatesAutoresizingMaskIntoConstraints = false
+        secondLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        addSubview(hourPicker)
-        addSubview(hourMinuteSeparator)
-        addSubview(minutePicker)
-        addSubview(minuteSecondSeparator)
-        addSubview(secondPicker)
+        for v in [hourPicker, hourMinuteSeparator!, minutePicker, minuteSecondSeparator!, secondPicker,
+                  hourLabel, minuteLabel, secondLabel] as [NSView] {
+            addSubview(v)
+        }
+
+        configureUnitLabel(hourLabel)
+        configureUnitLabel(minuteLabel)
+        configureUnitLabel(secondLabel)
 
         NSLayoutConstraint.activate([
             hourPicker.leadingAnchor.constraint(equalTo: leadingAnchor),
             hourPicker.topAnchor.constraint(equalTo: topAnchor),
             hourPicker.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            hourMinuteSeparator.leadingAnchor.constraint(equalTo: hourPicker.trailingAnchor, constant: 2),
+            hourLabel.leadingAnchor.constraint(equalTo: hourPicker.trailingAnchor, constant: 4),
+            hourLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+
+            hourMinuteSeparator.leadingAnchor.constraint(equalTo: hourLabel.trailingAnchor, constant: 4),
             hourMinuteSeparator.centerYAnchor.constraint(equalTo: centerYAnchor),
             hourMinuteSeparator.widthAnchor.constraint(equalToConstant: 20),
 
@@ -83,14 +95,20 @@ class DrumrollTimePicker: NSView {
             minutePicker.bottomAnchor.constraint(equalTo: bottomAnchor),
             minutePicker.widthAnchor.constraint(equalTo: hourPicker.widthAnchor),
 
-            minuteSecondSeparator.leadingAnchor.constraint(equalTo: minutePicker.trailingAnchor, constant: 2),
+            minuteLabel.leadingAnchor.constraint(equalTo: minutePicker.trailingAnchor, constant: 4),
+            minuteLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+
+            minuteSecondSeparator.leadingAnchor.constraint(equalTo: minuteLabel.trailingAnchor, constant: 4),
             minuteSecondSeparator.centerYAnchor.constraint(equalTo: centerYAnchor),
             minuteSecondSeparator.widthAnchor.constraint(equalToConstant: 20),
 
             secondPicker.leadingAnchor.constraint(equalTo: minuteSecondSeparator.trailingAnchor, constant: 2),
             secondPicker.topAnchor.constraint(equalTo: topAnchor),
             secondPicker.bottomAnchor.constraint(equalTo: bottomAnchor),
-            secondPicker.trailingAnchor.constraint(equalTo: trailingAnchor),
+
+            secondLabel.leadingAnchor.constraint(equalTo: secondPicker.trailingAnchor, constant: 4),
+            secondLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+            secondLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
 
         let equalWidth = minutePicker.widthAnchor.constraint(equalTo: secondPicker.widthAnchor)
@@ -106,11 +124,17 @@ class DrumrollTimePicker: NSView {
         minuteSecondSeparator.isHidden = !showsSeconds
     }
 
+    private func configureUnitLabel(_ label: NSTextField) {
+        label.font = NSFont.systemFont(ofSize: 16)
+        label.textColor = .white
+        label.alignment = .left
+    }
+
     private func makeSeparator() -> NSTextField {
         let label = NSTextField(labelWithString: ":")
         label.alignment = .center
         label.font = NSFont.systemFont(ofSize: 20, weight: .bold)
-        label.textColor = .labelColor
+        label.textColor = .white
         return label
     }
 }
