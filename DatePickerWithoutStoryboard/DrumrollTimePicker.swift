@@ -73,7 +73,23 @@ public class DrumrollTimePicker: NSView {
     }
 
     public var selectionColor: NSColor = NSColor.systemIndigo.withAlphaComponent(0.2) {
-        didSet { selectionBar.backgroundColor = selectionColor.cgColor }
+        didSet { updateSelectionBar() }
+    }
+
+    public var selectionBarHeight: CGFloat = 0 {
+        didSet { updateSelectionBar() }
+    }
+
+    public var selectionBarOffsetY: CGFloat = 6 {
+        didSet { updateSelectionBar() }
+    }
+
+    public var selectionBarCornerRadius: CGFloat = 16 {
+        didSet { updateSelectionBar() }
+    }
+
+    public var selectionBarInsets: CGFloat = 4 {
+        didSet { updateSelectionBar() }
     }
 
     public var itemSpacing: CGFloat = 8 {
@@ -152,14 +168,19 @@ public class DrumrollTimePicker: NSView {
     public override func layout() {
         super.layout()
         selectionOverlay.frame = bounds
+        updateSelectionBar()
+    }
+
+    private func updateSelectionBar() {
         let centerY = bounds.midY + hourPicker.textCenterOffset
-        let barHeight = max(1, hourPicker.itemHeight - 4)
+        let barHeight = selectionBarHeight > 0 ? selectionBarHeight : max(1, hourPicker.itemHeight - 4)
+        let inset = selectionBarInsets
         selectionBar.backgroundColor = selectionColor.cgColor
-        selectionBar.cornerRadius = 16
+        selectionBar.cornerRadius = selectionBarCornerRadius
         selectionBar.frame = CGRect(
-            x: 4,
-            y: centerY - barHeight * 0.5 + 4,
-            width: max(0, bounds.width - 8),
+            x: inset,
+            y: centerY - barHeight * 0.5 + selectionBarOffsetY,
+            width: max(0, bounds.width - inset * 2),
             height: barHeight
         )
     }
