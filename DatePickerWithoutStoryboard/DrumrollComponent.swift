@@ -137,7 +137,7 @@ public class DrumrollComponent: NSView {
 
     private func setup() {
         wantsLayer = true
-        layer?.backgroundColor = NSColor.black.cgColor
+        layer?.backgroundColor = componentBackgroundColor?.cgColor ?? NSColor.black.cgColor
 
         for item in repeatedItems {
             let textLayer = CATextLayer()
@@ -250,7 +250,7 @@ public class DrumrollComponent: NSView {
 
             let t = abs(angle) / maxAngle
             layer.opacity = Float(max(0, 1.0 - pow(t, 3)))
-            layer.foregroundColor = textColor.withAlphaComponent(CGFloat(layer.opacity)).cgColor
+            layer.foregroundColor = textColor.cgColor
         }
 
         if let unitLayer {
@@ -299,10 +299,6 @@ public class DrumrollComponent: NSView {
         } else {
             scrollOffset = clampToMiddle(scrollOffset)
         }
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        updatePositions()
-        CATransaction.commit()
 
         let now = Date()
         lastDragPoints.append((now, point.y))
@@ -346,10 +342,6 @@ public class DrumrollComponent: NSView {
         } else {
             scrollOffset = clampToMiddle(scrollOffset)
         }
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        updatePositions()
-        CATransaction.commit()
 
         pendingSnapTimer?.invalidate()
         if event.momentumPhase == .ended || event.phase == .ended {

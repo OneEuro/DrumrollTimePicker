@@ -59,10 +59,13 @@ public class DrumrollTimePicker: NSView {
     }
 
     public func setTime(hour: Int, minute: Int, second: Int? = nil, animated: Bool = true) {
-        hourPicker.selectItem(String(format: "%02d", hour), animated: animated)
-        minutePicker.selectItem(String(format: "%02d", minute), animated: animated)
+        let h = max(0, min(23, hour))
+        let m = max(0, min(59, minute))
+        hourPicker.selectItem(String(format: "%02d", h), animated: animated)
+        minutePicker.selectItem(String(format: "%02d", m), animated: animated)
         if showsSeconds {
-            secondPicker.selectItem(String(format: "%02d", second ?? 0), animated: animated)
+            let s = max(0, min(59, second ?? 0))
+            secondPicker.selectItem(String(format: "%02d", s), animated: animated)
         }
     }
 
