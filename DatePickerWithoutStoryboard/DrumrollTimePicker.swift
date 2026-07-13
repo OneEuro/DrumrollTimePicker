@@ -16,7 +16,7 @@ public class DrumrollTimePicker: NSView {
     private var minuteLeadingConstraint: NSLayoutConstraint?
     private var secondLeadingConstraint: NSLayoutConstraint?
 
-    public var showsSeconds: Bool = false {
+    public var showsSeconds: Bool = true {
         didSet {
             secondPicker.isHidden = !showsSeconds
         }
@@ -56,6 +56,14 @@ public class DrumrollTimePicker: NSView {
             second = 0
         }
         return (hour, minute, second)
+    }
+
+    public func setTime(hour: Int, minute: Int, second: Int? = nil, animated: Bool = true) {
+        hourPicker.selectItem(String(format: "%02d", hour), animated: animated)
+        minutePicker.selectItem(String(format: "%02d", minute), animated: animated)
+        if showsSeconds {
+            secondPicker.selectItem(String(format: "%02d", second ?? 0), animated: animated)
+        }
     }
 
     // MARK: - Customization Properties
@@ -156,11 +164,9 @@ public class DrumrollTimePicker: NSView {
             secondPicker.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
 
-        let now = Date()
-        let calendar = Calendar.current
-        hourPicker.selectItem(String(format: "%02d", calendar.component(.hour, from: now)), animated: false)
-        minutePicker.selectItem(String(format: "%02d", calendar.component(.minute, from: now)), animated: false)
-        secondPicker.selectItem(String(format: "%02d", calendar.component(.second, from: now)), animated: false)
+        hourPicker.selectItem("00", animated: false)
+        minutePicker.selectItem("00", animated: false)
+        secondPicker.selectItem("00", animated: false)
 
         secondPicker.isHidden = !showsSeconds
     }
