@@ -17,7 +17,7 @@ A macOS drum-roll style time picker, recreating the iOS `UIDatePicker` look in A
 
 ## Requirements
 
-- macOS 14.0+
+- macOS 13.0+
 - Swift 5.9+
 
 ## Installation
